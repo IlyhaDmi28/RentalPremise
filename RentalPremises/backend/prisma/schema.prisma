@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+    ID           Int       @id @default(autoincrement())
+    Login        String    @unique
+    Password     String
+    Role         Int       @default(0)
+    Name         String?
+    Surname      String?
+    PhoneNumber  String?
+    Photo        Bytes?
+    PremiseRef   Premise[]
+    RentalRef    Rental[]
+
+    @@map("Users")
+}
+
+model TypePremises {
+  ID           Int        @id @default(autoincrement())
+  Name         String     @unique
+  PremiseRef   Premise[]
+  Characteristic    Characteristic[] @relation("Characteristic_TypepPemises")
+
+  @@map("TypePremises")
+}
+
+model Premise {
+  ID            Int          @id @default(autoincrement())
+  ID_type       Int
+  ID_owner      Int
+  Name          String
+  Image         Bytes?       // Вместо VARBINARY, Prisma использует Bytes
+  Price         Float
+  Address       String
+  RentalRef     Rental[]
+  TypePremises  TypePremises @relation(fields: [ID_type], references: [ID])
+  Owner         User         @relation(fields: [ID_owner], references: [ID])
+  DescriptionCharacteristicRef DescriptionCharacteristic[]
+
+  @@map("Premise")
+}
+
+model Rental {
+  ID           Int      @id @default(autoincrement())
+  ID_premise   Int
+  ID_tenant    Int
+  Status       Int      @default(0)
+  StartDate    DateTime?
+  Premise      Premise  @relation(fields: [ID_premise], references: [ID])
+  Tenant       User     @relation(fields: [ID_tenant], references: [ID], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("Rental")
+}
+
+model Characteristic {
+  ID   Int    @id @default(autoincrement())
+  Name String @unique
+  TypePremises      TypePremises[]   @relation("Characteristic_TypepPemises")
+  DescriptionCharacteristicRef DescriptionCharacteristic[]
+
+  @@map("Characteristic")
+}
+
+
+model DescriptionCharacteristic {
+  ID               Int           @id @default(autoincrement())
+  ID_characteristic Int
+  ID_premise       Int
+  Description      String
+  Characteristic   Characteristic @relation(fields: [ID_characteristic], references: [ID])
+  Premise          Premise       @relation(fields: [ID_premise], references: [ID])
+
+  @@map("DescriptionCharacteristic")
+}
